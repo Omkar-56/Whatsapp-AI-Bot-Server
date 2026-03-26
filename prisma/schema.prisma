@@ -1,0 +1,154 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Business {
+  id                String           @id @default(uuid())
+  name              String
+  ownerName         String
+  ownerEmail        String           @unique
+  ownerPhone        String
+  whatsappNumber    String           @unique
+  whatsappPhoneId   String
+  systemPrompt      String
+  businessType      String
+  timezone          String           @default("Asia/Kolkata")
+  isActive          Boolean          @default(true)
+  createdAt         DateTime         @default(now())
+
+  config            BusinessConfig?
+  conversations     Conversation[]
+  appointments      Appointment[]
+  leads             Lead[]
+  subscription      Subscription?
+  dailySummaries    DailySummary[]
+
+  @@map("businesses")
+}
+
+model BusinessConfig {
+  id                  String    @id @default(uuid())
+  businessId          String    @unique
+  workingHours        Json?
+  services            Json?
+  faqs                Json?
+  aiModel             String    @default("gemini-2.5-flash")
+  language            String    @default("hi-en")
+  maxAdvanceDays      Int       @default(30)
+  reminderHoursBefore Int       @default(2)
+
+  business            Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@map("business_config")
+}
+
+model Conversation {
+  id              String        @id @default(uuid())
+  businessId      String
+  customerPhone   String
+  customerName    String?
+  status          String        @default("active")
+  intent          String?
+  isEscalated     Boolean       @default(false)
+  lastMessageAt   DateTime?
+  startedAt       DateTime      @default(now())
+
+  business        Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  messages        Message[]
+  appointments    Appointment[]
+  lead            Lead?
+
+  @@unique([businessId, customerPhone])
+  @@index([businessId, lastMessageAt(sort: Desc)])
+  @@map("conversations")
+}
+
+model Message {
+  id              String       @id @default(uuid())
+  conversationId  String
+  role            String       // "user" or "assistant"
+  content         String
+  waMessageId     String?      @unique
+  messageType     String       @default("text")
+  tokensUsed      Int?
+  sentAt          DateTime     @default(now())
+
+  conversation    Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, sentAt(sort: Desc)])
+  @@map("messages")
+}
+
+model Appointment {
+  id              String       @id @default(uuid())
+  businessId      String
+  conversationId  String?
+  customerName    String
+  customerPhone   String
+  service         String
+  scheduledAt     DateTime
+  durationMins    Int          @default(30)
+  status          String       @default("confirmed")
+  reminderSent    Boolean      @default(false)
+  notes           String?
+  createdAt       DateTime     @default(now())
+
+  business        Business     @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  conversation    Conversation? @relation(fields: [conversationId], references: [id])
+
+  @@index([businessId, scheduledAt])
+  @@index([reminderSent, scheduledAt])
+  @@map("appointments")
+}
+
+model Lead {
+  id              String       @id @default(uuid())
+  businessId      String
+  conversationId  String?      @unique
+  customerName    String?
+  customerPhone   String
+  interest        String?
+  followUpSent    Boolean      @default(false)
+  createdAt       DateTime     @default(now())
+
+  business        Business     @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  conversation    Conversation? @relation(fields: [conversationId], references: [id])
+
+  @@map("leads")
+}
+
+model Subscription {
+  id                  String    @id @default(uuid())
+  businessId          String    @unique
+  razorpaySubId       String?   @unique
+  plan                String
+  status              String    @default("trial")
+  trialEndsAt         DateTime?
+  currentPeriodEnd    DateTime?
+  createdAt           DateTime  @default(now())
+
+  business            Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@map("subscriptions")
+}
+
+model DailySummary {
+  id                    String   @id @default(uuid())
+  businessId            String
+  date                  DateTime @db.Date
+  totalConversations    Int      @default(0)
+  newLeads              Int      @default(0)
+  appointmentsBooked    Int      @default(0)
+  escalations           Int      @default(0)
+  tokensUsed            Int      @default(0)
+
+  business              Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, date])
+  @@map("daily_summaries")
+}
