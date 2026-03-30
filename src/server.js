@@ -1,6 +1,7 @@
 import express from "express";
 import dotenv from "dotenv";
 import axios from "axios";
+import { PrismaClient } from "@prisma/client";
 dotenv.config();
 
 const app = express();
@@ -11,7 +12,9 @@ const {
   WHATSAPP_ACCESS_TOKEN,
   WHATSAPP_PHONE_NUMBER_ID,
   PORT = 3000
-} = process.env
+} = process.env;
+
+const prisma = new PrismaClient();
 
 // Health check route
 app.get("/health", (req, res) => {
@@ -54,7 +57,8 @@ app.post('/webhook', async (req, res) => {
     // Ignore delivery/read status updates — only process actual messages
     if (!value?.messages) return
 
-    const message = value.messages[0]
+    const message = value.messages[0];
+    const phoneNumberId = value?.metadata?.phone_number_id;
 
     // Only handle text messages for now (ignore audio, image etc.)
     if (message.type !== 'text') return;
@@ -65,12 +69,56 @@ app.post('/webhook', async (req, res) => {
 
     console.log(`Message from ${customerPhone}: "${messageText}"`);
 
-    // ── TODO: save to DB and call Gemini here (next step) ────
-    // For now, send a hardcoded reply to confirm the loop works
+    const existing = await prisma.message.findUnique({
+      where: { waMessageId }
+    });
 
-    const replyText = `Hello! I received your message: "${messageText}". AI replies coming soon!`;
+    if (existing) return;
 
-    await sendWhatsAppMessage(customerPhone, replyText);
+    const business = await prisma.business.findUnique({
+      where: {
+        whatsappPhoneId: phoneNumberId
+      }
+    });
+
+    if (!business) {
+      console.log("Business not found");
+      return;
+    }
+
+    const conversation = await prisma.conversation.upsert({
+      where: {
+        businessId_customerPhone: {
+          businessId: business.id,
+          customerPhone: customerPhone
+        }
+      },
+      update: {},
+      create: {
+        businessId: business.id,
+        customerPhone: customerPhone,
+        status: "active",
+        isEscalated: false
+      }
+    });
+
+    await prisma.message.create({
+      data: {
+        conversationId: conversation.id,
+        role: "user",
+        content: messageText,
+        waMessageId: waMessageId
+      }
+    });
+
+    await prisma.conversation.update({
+      where: { id: conversation.id },
+      data: { lastMessageAt: new Date() }
+    });
+
+    const replyText = `Hello! How can I help you?`;
+
+    await sendWhatsAppMessage(customerPhone, replyText, conversation.id);
 
   } catch (err) {
     console.error('Error processing webhook:', err.message);
@@ -78,9 +126,9 @@ app.post('/webhook', async (req, res) => {
   }
 });
 
-export const sendWhatsAppMessage = async (to, message) => {
+export const sendWhatsAppMessage = async (to, message, conversation_id) => {
   try {
-    await axios.post(
+    const response = await axios.post(
       `https://graph.facebook.com/v22.0/${WHATSAPP_PHONE_NUMBER_ID}/messages`,
       {
         messaging_product: 'whatsapp',
@@ -95,6 +143,23 @@ export const sendWhatsAppMessage = async (to, message) => {
         }
       }
     );
+
+    const waMessageId = response.data.messages?.[0]?.id;
+
+    await prisma.message.create({
+      data: {
+        conversationId: conversation_id,
+        role: "assistant",
+        content: message,
+        waMessageId: waMessageId
+      }
+    });
+
+    await prisma.conversation.update({
+      where: { id: conversation_id },
+      data: { lastMessageAt: new Date() }
+    });
+
     console.log(`Reply sent to ${to}`);
   } catch (err) {
     console.error('Failed to send message:', err.response?.data || err.message);
