@@ -17,7 +17,7 @@ const {
 const prisma = new PrismaClient();
 
 // Health check route
-app.get("/health", (req, res) => {
+app.get("/", (req, res) => {
   res.status(200).json({
     status: "OK",
     message: "Server is running",
