@@ -1,7 +1,7 @@
 import express from "express";
 import dotenv from "dotenv";
 import axios from "axios";
-import { PrismaClient } from "@prisma/client";
+import pkg from "@prisma/client";
 dotenv.config();
 
 const app = express();
@@ -14,6 +14,7 @@ const {
   PORT = 3000
 } = process.env;
 
+const { PrismaClient } = pkg;
 const prisma = new PrismaClient();
 
 // Health check route
