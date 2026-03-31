@@ -16,12 +16,7 @@ const {
 } = process.env;
 
 const { PrismaClient } = pkg;
-const prisma = new PrismaClient({
-  datasource: { 
-    url: DATABASE_URL 
-  }
-  
-});
+const prisma = new PrismaClient();
 
 // Health check route
 app.get("/", (req, res) => {
