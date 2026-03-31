@@ -2,12 +2,14 @@ import express from "express";
 import dotenv from "dotenv";
 import axios from "axios";
 import pkg from "@prisma/client";
+import { url } from "node:inspector";
 dotenv.config();
 
 const app = express();
 app.use(express.json())
 
 const {
+  DATABASE_URL,
   WHATSAPP_VERIFY_TOKEN,
   WHATSAPP_ACCESS_TOKEN,
   WHATSAPP_PHONE_NUMBER_ID,
@@ -16,7 +18,7 @@ const {
 
 const { PrismaClient } = pkg;
 const prisma = new PrismaClient({
-  datasourceUrl: process.env.DATABASE_URL
+  url: DATABASE_URL
 });
 
 // Health check route
