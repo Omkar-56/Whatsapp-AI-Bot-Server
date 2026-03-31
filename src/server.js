@@ -2,7 +2,6 @@ import express from "express";
 import dotenv from "dotenv";
 import axios from "axios";
 import pkg from "@prisma/client";
-import { url } from "node:inspector";
 dotenv.config();
 
 const app = express();
