@@ -17,7 +17,10 @@ const {
 
 const { PrismaClient } = pkg;
 const prisma = new PrismaClient({
-  url: DATABASE_URL
+  datasource: { 
+    url: DATABASE_URL 
+  }
+  
 });
 
 // Health check route
