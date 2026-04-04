@@ -1,7 +1,6 @@
 import express from "express";
 import dotenv from "dotenv";
-import axios from "axios";
-import prisma from "./prisma.js";
+import { handleIncomingMessage } from "./messageHandler.js";
 dotenv.config();
 
 const app = express();
@@ -46,6 +45,7 @@ app.post('/webhook', async (req, res) => {
 
   try {
     const body = req.body;
+    console.log(body);
 
     // Ignore non-message events (status updates, read receipts etc.)
     if (body.object !== 'whatsapp_business_account') return;
@@ -55,14 +55,12 @@ app.post('/webhook', async (req, res) => {
     const value   = changes?.value;
 
     // Ignore delivery/read status updates — only process actual messages
-    if (!value?.messages) return
+    if (!value?.messages) return;
 
     const message = value.messages[0];
-    const phoneNumberId = value?.metadata?.phone_number_id;
-
-    // Only handle text messages for now (ignore audio, image etc.)
     if (message.type !== 'text') return;
 
+    const phoneNumberId = value?.metadata?.phone_number_id;
     if (!phoneNumberId) {
       console.log("No phoneNumberId found");  
       return;
@@ -72,59 +70,7 @@ app.post('/webhook', async (req, res) => {
     const messageText   = message.text.body;   // what they typed
     const waMessageId   = message.id;          // Meta's unique message ID
 
-    console.log(`Message from ${customerPhone}: "${messageText}"`);
-
-    const business = await prisma.business.findUnique({
-      where: { whatsappPhoneId: phoneNumberId },
-      include: { config: true }
-    });
-
-    if (!business) {
-      console.log("Business not found");
-      return;
-    }
-
-    const conversation = await prisma.conversation.upsert({
-      where: {
-        businessId_customerPhone: {
-          businessId: business.id,
-          customerPhone: customerPhone
-        }
-      },
-      update: {
-        lastMessageAt: new Date(),
-        status: 'active'
-      },
-      create: {
-        businessId: business.id,
-        customerPhone: customerPhone,
-        status: 'active',
-        lastMessageAt: new Date()
-      }
-    });
-
-    const existing = await prisma.message.findUnique({
-      where: { waMessageId }
-    });
-
-    if (existing) {
-      console.log(`⚠️  Duplicate message ${waMessageId} — skipping`)
-      return
-    }
-
-    await prisma.message.create({
-      data: {
-        conversationId: conversation.id,
-        role: 'user',
-        content: messageText,
-        waMessageId: waMessageId,
-        messageType: 'text'
-      }
-    });
-
-    const replyText = `Hello! How can I help you?`;
-
-    await sendWhatsAppMessage(customerPhone, replyText, conversation.id);
+    await handleIncomingMessage(phoneNumberId, customerPhone, messageText, waMessageId);
 
   } catch (err) {
     console.error('Error processing webhook:', err.message);
@@ -132,47 +78,7 @@ app.post('/webhook', async (req, res) => {
   }
 });
 
-export const sendWhatsAppMessage = async (to, message, conversation_id) => {
-  try {
-    const response = await axios.post(
-      `https://graph.facebook.com/v22.0/${WHATSAPP_PHONE_NUMBER_ID}/messages`,
-      {
-        messaging_product: 'whatsapp',
-        to: to,
-        type: 'text',
-        text: { body: message }
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${WHATSAPP_ACCESS_TOKEN}`,
-          'Content-Type': 'application/json'
-        }
-      }
-    );
-
-    const waMessageId = response.data.messages?.[0]?.id;
-
-    await prisma.message.create({
-      data: {
-        conversationId: conversation_id,
-        role: "assistant",
-        content: message,
-        waMessageId: waMessageId
-      }
-    });
-
-    await prisma.conversation.update({
-      where: { id: conversation_id },
-      data: { lastMessageAt: new Date() }
-    });
-
-    console.log(`Reply sent to ${to}`);
-  } catch (err) {
-    console.error('Failed to send message:', err.response?.data || err.message);
-  }
-}
-
-// Start server 
+// start server 
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });
