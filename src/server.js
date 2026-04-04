@@ -69,16 +69,9 @@ app.post('/webhook', async (req, res) => {
 
     console.log(`Message from ${customerPhone}: "${messageText}"`);
 
-    const existing = await prisma.message.findUnique({
-      where: { waMessageId }
-    });
-
-    if (existing) return;
-
     const business = await prisma.business.findUnique({
-      where: {
-        whatsappPhoneId: phoneNumberId
-      }
+      where: { whatsappPhoneId: phoneNumberId },
+      include: { config: true }
     });
 
     if (!business) {
@@ -93,27 +86,35 @@ app.post('/webhook', async (req, res) => {
           customerPhone: customerPhone
         }
       },
-      update: {},
+      update: {
+        lastMessageAt: new Date(),
+        status: active
+      },
       create: {
         businessId: business.id,
         customerPhone: customerPhone,
-        status: "active",
-        isEscalated: false
+        status: 'active',
+        lastMessageAt: new Date()
       }
     });
+
+    const existing = await prisma.message.findUnique({
+      where: { waMessageId }
+    });
+
+    if (existing) {
+      console.log(`⚠️  Duplicate message ${waMessageId} — skipping`)
+      return
+    }
 
     await prisma.message.create({
       data: {
         conversationId: conversation.id,
-        role: "user",
+        role: 'user',
         content: messageText,
-        waMessageId: waMessageId
+        waMessageId: waMessageId,
+        messageType: 'text'
       }
-    });
-
-    await prisma.conversation.update({
-      where: { id: conversation.id },
-      data: { lastMessageAt: new Date() }
     });
 
     const replyText = `Hello! How can I help you?`;
@@ -166,7 +167,7 @@ export const sendWhatsAppMessage = async (to, message, conversation_id) => {
   }
 }
 
-// Start server
+// Start server 
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });

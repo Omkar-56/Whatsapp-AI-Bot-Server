@@ -3,24 +3,26 @@ import { PrismaPg } from "@prisma/adapter-pg";
 
 const { PrismaClient } = pkg;
 
-let prisma;
+const globalForPrisma = globalThis;
 
-if (!global.prisma) {
+if (!globalForPrisma.prisma) {
   const adapter = new PrismaPg({
     connectionString: process.env.DATABASE_URL,
-    pgOptions:{
+    // ssl: true tells pg driver to use SSL but NOT verify the cert chain
+    // this is correct for Supabase pooler which uses self-signed certs
+    pgOptions: {
       ssl: {
-        rejectUnauthorized: false, 
-      },
-    },
-    
+        rejectUnauthorized: false
+      }
+    }
   });
 
-  global.prisma = new PrismaClient({
+  globalForPrisma.prisma = new PrismaClient({
     adapter,
+    log: process.env.NODE_ENV === "development"
+      ? ["query", "error", "warn"]
+      : ["error"]
   });
 }
 
-prisma = global.prisma;
-
-export default prisma;
+export default globalForPrisma.prisma;
