@@ -13,7 +13,7 @@ model Business {
   ownerEmail        String           @unique
   ownerPhone        String
   whatsappNumber    String           @unique
-  whatsappPhoneId   String
+  whatsappPhoneId   String           @unique
   systemPrompt      String
   businessType      String
   timezone          String           @default("Asia/Kolkata")
