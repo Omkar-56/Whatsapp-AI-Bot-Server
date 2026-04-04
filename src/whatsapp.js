@@ -1,5 +1,10 @@
 import axios from "axios";
 
+const {
+  WHATSAPP_ACCESS_TOKEN,
+  WHATSAPP_PHONE_NUMBER_ID
+} = process.env;
+
 export const sendWhatsAppMessage = async (to, message) => {
   try {
     const response = await axios.post(

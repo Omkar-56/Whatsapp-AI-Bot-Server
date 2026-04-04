@@ -1,15 +1,14 @@
-import express from "express";
 import dotenv from "dotenv";
-import { handleIncomingMessage } from "./messageHandler.js";
 dotenv.config();
+
+import express from "express";
+import { handleIncomingMessage } from "./messageHandler.js";
 
 const app = express();
 app.use(express.json())
 
 const {
   WHATSAPP_VERIFY_TOKEN,
-  WHATSAPP_ACCESS_TOKEN,
-  WHATSAPP_PHONE_NUMBER_ID,
   PORT = 3000
 } = process.env;
 

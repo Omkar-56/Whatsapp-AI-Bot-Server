@@ -55,7 +55,7 @@ export const handleIncomingMessage = async (phoneNumberId, customerPhone, messag
     }
   });
 
-  console.log(`💾 Saved message from ${customerPhone}: "${messageText}"`);
+  console.log(`Saved message from ${customerPhone}: "${messageText}"`);
 
   // const history = await prisma.message.findMany({
   //   where: { conversationId: conversation.id },
@@ -81,6 +81,6 @@ export const handleIncomingMessage = async (phoneNumberId, customerPhone, messag
     data: { lastMessageAt: new Date() }
   });
 
-  console.log(`✅ Full cycle complete for ${customerPhone}`);
+  console.log(`Full cycle complete for ${customerPhone}`);
 
 }
