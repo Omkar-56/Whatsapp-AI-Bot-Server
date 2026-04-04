@@ -63,6 +63,11 @@ app.post('/webhook', async (req, res) => {
     // Only handle text messages for now (ignore audio, image etc.)
     if (message.type !== 'text') return;
 
+    if (!phoneNumberId) {
+      console.log("No phoneNumberId found");  
+      return;
+    }
+
     const customerPhone = message.from;        // e.g. "919876543210"
     const messageText   = message.text.body;   // what they typed
     const waMessageId   = message.id;          // Meta's unique message ID
@@ -88,7 +93,7 @@ app.post('/webhook', async (req, res) => {
       },
       update: {
         lastMessageAt: new Date(),
-        status: active
+        status: 'active'
       },
       create: {
         businessId: business.id,
