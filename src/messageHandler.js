@@ -57,14 +57,16 @@ export const handleIncomingMessage = async (phoneNumberId, customerPhone, messag
 
   console.log(`Saved message from ${customerPhone}: "${messageText}"`);
 
-  const history = await prisma.message.findMany({
+  const allMessages = await prisma.message.findMany({
     where: {
       conversationId: conversation.id,
       waMessageId: { not: waMessageId }
     },
     orderBy: { sentAt: 'desc' },
     take: 10
-  }).reverse();
+  });
+
+  const history = allMessages.reverse();
 
   console.log(`🤖 Calling Gemini for ${business.name} — history: ${history.length} messages`);
 
