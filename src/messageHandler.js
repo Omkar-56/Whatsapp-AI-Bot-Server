@@ -1,10 +1,10 @@
 import { sendWhatsAppMessage } from "./whatsapp.js";
+import { getAIReply } from "./gemini.js";
 import prisma from "./prisma.js";
 
 export const handleIncomingMessage = async (phoneNumberId, customerPhone, messageText, waMessageId) => {
   const business = await prisma.business.findUnique({
-    where: { whatsappPhoneId: phoneNumberId },
-    include: { config: true }
+    where: { whatsappPhoneId: phoneNumberId }
   });
 
   if (!business) {
@@ -57,13 +57,22 @@ export const handleIncomingMessage = async (phoneNumberId, customerPhone, messag
 
   console.log(`Saved message from ${customerPhone}: "${messageText}"`);
 
-  // const history = await prisma.message.findMany({
-  //   where: { conversationId: conversation.id },
-  //   orderBy: { sentAt: 'asc' },
-  //   take: 10  // last 10 messages
-  // });
+  const history = await prisma.message.findMany({
+    where: {
+      conversationId: conversation.id,
+      waMessageId: { not: waMessageId }
+    },
+    orderBy: { sentAt: 'desc' },
+    take: 10
+  }).reverse();
 
-  const replyText = `Hi! I received your message. Our AI assistant will respond shortly. You said: "${messageText}"`;
+  console.log(`🤖 Calling Gemini for ${business.name} — history: ${history.length} messages`);
+
+  const { replyText, tokensUsed } = await getAIReply(
+    business.systemPrompt,
+    history,
+    messageText
+  );
 
   await sendWhatsAppMessage(customerPhone, replyText);
 
@@ -72,7 +81,8 @@ export const handleIncomingMessage = async (phoneNumberId, customerPhone, messag
       conversationId: conversation.id,
       role: 'assistant',
       content: replyText,
-      messageType: 'text'
+      messageType: 'text',
+      tokensUsed: tokensUsed
     }
   });
 
@@ -81,6 +91,6 @@ export const handleIncomingMessage = async (phoneNumberId, customerPhone, messag
     data: { lastMessageAt: new Date() }
   });
 
-  console.log(`Full cycle complete for ${customerPhone}`);
+  console.log(`Done — ${business.name} replied to ${customerPhone}`);
 
 }
