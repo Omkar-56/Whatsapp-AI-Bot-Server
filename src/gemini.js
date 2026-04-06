@@ -45,5 +45,3 @@ export const getAIReply = async (systemPrompt, history, newMessage) => {
     }
   }
 }
-
-run();
