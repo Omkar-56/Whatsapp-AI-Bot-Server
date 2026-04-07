@@ -46,7 +46,9 @@ export const getAIReply = async (systemPrompt, history, newMessage) => {
         systemInstruction: {
           role: "system",
           parts: [{ text: systemPrompt }]
-        }
+        },
+        temperature: 0.7,
+        maxOutputTokens: 300
       }
     });
 
@@ -58,25 +60,36 @@ export const getAIReply = async (systemPrompt, history, newMessage) => {
     return { replyText, tokensUsed }
 
   } catch (err) {
-    console.error("Gemini error:", err.message)
+    console.error("Gemini error:", err.message);
 
-    if (err.status === 503) {
-      console.log("Swithing to fallback model...");
-      return await ai.models.generateContent({
+    try {
+      console.log("Switching to fallback model...");
+
+      const fallbackRes = await ai.models.generateContent({
         model: "gemini-2.0-flash",
         contents,
         config: {
           systemInstruction: {
             role: "system",
             parts: [{ text: systemPrompt }]
-          }
+          },
+          temperature: 0.7,
+          maxOutputTokens: 300
         }
       });
-    }
 
-    return {
+      return {
+        replyText: fallbackRes.text ?? "",
+        tokensUsed: fallbackRes.usageMetadata?.totalTokenCount ?? 0
+      };
+
+    } catch (fallbackErr) {
+      console.error("Fallback failed:", fallbackErr.message);
+
+      return {
       replyText: "Sorry, thodi der baad try karein 🙏",
       tokensUsed: 0
+      };
     }
   }
 }
