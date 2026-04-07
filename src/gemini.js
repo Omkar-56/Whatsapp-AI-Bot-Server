@@ -14,8 +14,15 @@ const formatHistory = (messages) => {
 }
 
 export const getAIReply = async (systemPrompt, history, newMessage) => {
+  const contents = [
+    ...formatHistory(history),
+    {
+      role: "user",
+      parts: [{ text: `User Query (Reply to this message only): ${newMessage}` }]
+    }
+  ];
+
   try {
-    console.log(history);
     
     // // Create a chat session with history
     // const chat = ai.chats.create({
@@ -31,14 +38,6 @@ export const getAIReply = async (systemPrompt, history, newMessage) => {
     // const response = await chat.sendMessage({
     //   message: newMessage
     // });
-
-    const contents = [
-      ...formatHistory(history),
-      {
-        role: "user",
-        parts: [{ text: `User Query (Reply to this message only): ${newMessage}` }]
-      }
-    ];
 
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash",
