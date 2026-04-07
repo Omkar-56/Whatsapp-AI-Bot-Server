@@ -45,6 +45,16 @@ export const handleIncomingMessage = async (phoneNumberId, customerPhone, messag
     return;
   }
 
+  const allMessages = await prisma.message.findMany({
+    where: {
+      conversationId: conversation.id,
+    },
+    orderBy: { sentAt: 'desc' },
+    take: 10
+  });
+
+  const history = allMessages.reverse();
+
   await prisma.message.create({
     data: {
       conversationId: conversation.id,
@@ -56,18 +66,6 @@ export const handleIncomingMessage = async (phoneNumberId, customerPhone, messag
   });
 
   console.log(`Saved message from ${customerPhone}: "${messageText}"`);
-
-  const allMessages = await prisma.message.findMany({
-    where: {
-      conversationId: conversation.id,
-      waMessageId: { not: waMessageId }
-    },
-    orderBy: { sentAt: 'desc' },
-    take: 10
-  });
-
-  const history = allMessages.reverse();
-
   console.log(`🤖 Calling Gemini for ${business.name} — history: ${history.length} messages`);
 
   const { replyText, tokensUsed } = await getAIReply(

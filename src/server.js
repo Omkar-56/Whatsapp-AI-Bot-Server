@@ -44,7 +44,6 @@ app.post('/webhook', async (req, res) => {
 
   try {
     const body = req.body;
-    console.log(body);
 
     // Ignore non-message events (status updates, read receipts etc.)
     if (body.object !== 'whatsapp_business_account') return;
