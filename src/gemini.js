@@ -1,4 +1,5 @@
 import { GoogleGenAI } from "@google/genai";
+import { log } from "console";
 
 // Initialize the client
 const ai = new GoogleGenAI({
@@ -60,8 +61,22 @@ export const getAIReply = async (systemPrompt, history, newMessage) => {
   } catch (err) {
     console.error("Gemini error:", err.message)
 
+    if (err.status === 503) {
+      console.log("Swithing to fallback model...");
+      return await ai.models.generateContent({
+        model: "gemini-2.0-flash",
+        contents,
+        config: {
+          systemInstruction: {
+            role: "system",
+            parts: [{ text: systemPrompt }]
+          }
+        }
+      });
+    }
+
     return {
-      replyText: "Namaste! Abhi hum busy hain. Thodi der mein aapko reply karenge. 🙏",
+      replyText: "Sorry, thodi der baad try karein 🙏",
       tokensUsed: 0
     }
   }
