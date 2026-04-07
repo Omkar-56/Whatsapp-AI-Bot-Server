@@ -47,8 +47,7 @@ export const getAIReply = async (systemPrompt, history, newMessage) => {
           role: "system",
           parts: [{ text: systemPrompt }]
         },
-        temperature: 0.7,
-        maxOutputTokens: 300
+        temperature: 0.7
       }
     });
 
@@ -73,8 +72,7 @@ export const getAIReply = async (systemPrompt, history, newMessage) => {
             role: "system",
             parts: [{ text: systemPrompt }]
           },
-          temperature: 0.7,
-          maxOutputTokens: 300
+          temperature: 0.7
         }
       });
 
