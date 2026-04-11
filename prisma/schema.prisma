@@ -102,6 +102,7 @@ model Appointment {
 
   @@index([businessId, scheduledAt])
   @@index([reminderSent, scheduledAt])
+  @@unique([businessId, customerPhone, scheduledAt])
   @@map("appointments")
 }
 

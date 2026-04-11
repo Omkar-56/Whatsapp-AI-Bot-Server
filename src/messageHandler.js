@@ -1,6 +1,7 @@
+import prisma from "./prisma.js";
 import { sendWhatsAppMessage } from "./whatsapp.js";
 import { getAIReply } from "./gemini.js";
-import prisma from "./prisma.js";
+import { detectAndSaveAppointment } from "./appointmentDetector.js";
 
 export const handleIncomingMessage = async (phoneNumberId, customerPhone, messageText, waMessageId) => {
   const business = await prisma.business.findUnique({
@@ -92,5 +93,15 @@ export const handleIncomingMessage = async (phoneNumberId, customerPhone, messag
   });
 
   console.log(`Done — ${business.name} replied to ${customerPhone}`);
+
+  try {
+    await detectAndSaveAppointment(
+      conversation.id,
+      business,
+      customerPhone
+    )
+  } catch (err) {
+    console.error("❌ Detection failed silently:", err.message)
+  }
 
 }
