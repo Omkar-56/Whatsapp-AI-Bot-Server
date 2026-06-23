@@ -1,5 +1,5 @@
 import cron from "node-cron"
-import prisma from "./db.js"
+import prisma from "./prisma.js"
 import { sendWhatsAppMessage } from "./whatsapp.js"
 
 const sendReminders = async () => {
