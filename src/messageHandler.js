@@ -42,7 +42,7 @@ export const handleIncomingMessage = async (phoneNumberId, customerPhone, messag
   });
 
   if (existing) {
-    console.log(`⚠️  Duplicate message ${waMessageId} — skipping`);
+    console.log(`Duplicate message ${waMessageId} — skipping`);
     return;
   }
 
@@ -67,7 +67,7 @@ export const handleIncomingMessage = async (phoneNumberId, customerPhone, messag
   });
 
   console.log(`Saved message from ${customerPhone}: "${messageText}"`);
-  console.log(`🤖 Calling Gemini for ${business.name} — history: ${history.length} messages`);
+  console.log(`Calling Gemini for ${business.name} — history: ${history.length} messages`);
 
   const { replyText, tokensUsed } = await getAIReply(
     business.systemPrompt,
@@ -101,7 +101,7 @@ export const handleIncomingMessage = async (phoneNumberId, customerPhone, messag
       customerPhone
     )
   } catch (err) {
-    console.error("❌ Detection failed silently:", err.message)
+    console.error("Detection failed silently:", err.message)
   }
 
 }

@@ -1,10 +1,9 @@
-// src/reminderCron.js
 import cron from "node-cron"
 import prisma from "./db.js"
 import { sendWhatsAppMessage } from "./whatsapp.js"
 
 const sendReminders = async () => {
-  console.log("⏰ Reminder cron fired —", new Date().toISOString())
+  console.log("Reminder cron fired —", new Date().toISOString())
 
   try {
     const now = new Date()
@@ -27,7 +26,7 @@ const sendReminders = async () => {
     })
 
     if (upcomingAppointments.length === 0) {
-      console.log("📋 No reminders to send this run")
+      console.log("No reminders to send this run")
       return
     }
 
@@ -53,10 +52,10 @@ const sendReminders = async () => {
         const reminderMessage =
           `🔔 *Appointment Reminder*\n\n` +
           `Hi ${appointment.customerName}! Your appointment is coming up soon.\n\n` +
-          `🏥 *${appointment.business.name}*\n` +
-          `🦷 *Service:* ${appointment.service}\n` +
-          `📅 *${dateFormatted}*\n` +
-          `⏰ *${timeFormatted}*\n\n` +
+          `*${appointment.business.name}*\n` +
+          `*Service:* ${appointment.service}\n` +
+          `*${dateFormatted}*\n` +
+          `*${timeFormatted}*\n\n` +
           `Please arrive 5 minutes early. See you soon! 😊\n\n` +
           `_To cancel or reschedule, reply to this message._`
 
@@ -70,27 +69,27 @@ const sendReminders = async () => {
           data: { reminderSent: true }
         })
 
-        console.log(`✅ Reminder sent to ${appointment.customerName} (${appointment.customerPhone})`)
+        console.log(`Reminder sent to ${appointment.customerName} (${appointment.customerPhone})`)
 
         // Small delay between messages to avoid WhatsApp rate limits
         await new Promise(resolve => setTimeout(resolve, 500))
 
       } catch (err) {
         // Log individual failure but continue processing others
-        console.error(`❌ Failed reminder for ${appointment.customerPhone}:`, err.message)
+        console.error(`Failed reminder for ${appointment.customerPhone}:`, err.message)
       }
     }
 
   } catch (err) {
-    console.error("❌ Reminder cron error:", err.message)
+    console.error("Reminder cron error:", err.message)
   }
 }
 
 export const startReminderCron = () => {
   // Run every 30 minutes
   // Cron syntax: "*/30 * * * *" = at minute 0 and 30 of every hour
-  cron.schedule("0 * * * *", sendReminders, {
-    timezone: "Asia/Kolkata"  // IST — important for date calculations
+  cron.schedule("*/30 * * * *", sendReminders, {
+    timezone: "Asia/Kolkata" 
   })
 
   console.log("Reminder cron started — fires every 30 minutes (IST)")
