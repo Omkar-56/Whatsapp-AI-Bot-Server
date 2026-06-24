@@ -48,7 +48,8 @@ export const detectAndSaveAppointment = async (customerPhone, business, conversa
       model: "gemini-2.5-flash",
       config: {
         temperature: 0.1,      // very low — we want consistent extraction
-        maxOutputTokens: 200,  // JSON is short
+        maxOutputTokens: 300,
+        responseMimeType: "application/json"  // JSON is short
       },
       contents: [{ role: "user", parts: [{ text: detectionPrompt }] }]
     });
