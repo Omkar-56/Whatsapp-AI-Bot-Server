@@ -18,7 +18,9 @@ export const detectAndSaveAppointment = async (customerPhone, business, conversa
       .reverse()
       .map(m => `${m.role === "user" ? "Customer" : "Assistant"}: ${m.content}`)
       .join("\n");
-      const today = new Date().toISOString().split("T")[0];
+    const today = new Date().toISOString().split("T")[0];
+
+    console.log("conversationText:\n", conversationText);
 
     const detectionPrompt = `
       You are an appointment detection system.
