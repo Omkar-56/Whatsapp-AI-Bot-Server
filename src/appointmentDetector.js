@@ -70,10 +70,10 @@ export const detectAndSaveAppointment = async (customerPhone, business, conversa
       properties: {
         booked: { type: "boolean" },
         patientName: { type: "string" },
-        service: { type: "string", "null" },
+        service: { type: ["string", "null"] },
         date: { type: "string" },
         time: { type: "string" },
-        notes: { type: "string", "null" }
+        notes: { type: ["string", "null"] }
       },
       required: ["booked", "patientName", "date", "time"]
     };
