@@ -14,6 +14,7 @@ export const detectAndSaveAppointment = async (customerPhone, business, conversa
       take: 10
     });
 
+    console.log("recentMessages:\n", recentMessages);
     const conversationText = recentMessages
       .reverse()
       .map(m => `${m.role === "user" ? "Customer" : "Assistant"}: ${m.content}`)
