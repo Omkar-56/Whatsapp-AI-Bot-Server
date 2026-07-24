@@ -8,6 +8,19 @@ const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 export const detectAndSaveAppointment = async (customerPhone, business, conversationId) => {
   try {
+
+    const all = await prisma.message.findMany();
+    console.log(all.length);
+
+    console.log(conversationId);
+
+    const msgs = await prisma.message.findMany({
+        where: {
+            conversationId
+        }
+    });
+    console.log(msgs.length);
+
     const recentMessages = await prisma.message.findMany({
       where: { conversationId: conversationId },
       orderBy: { sentAt: "desc" },
