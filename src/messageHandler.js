@@ -96,9 +96,9 @@ export const handleIncomingMessage = async (phoneNumberId, customerPhone, messag
 
   try {
     await detectAndSaveAppointment(
-      conversation.id,
+      customerPhone,
       business,
-      customerPhone
+      conversation.id
     )
   } catch (err) {
     console.error("Detection failed silently:", err.message)
