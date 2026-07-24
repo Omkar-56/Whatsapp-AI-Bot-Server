@@ -54,9 +54,8 @@ export const detectAndSaveAppointment = async (customerPhone, business, conversa
       - Convert times to 24-hour HH:MM format.
       - If any field is not mentioned, return null.
       - Do not invent names, dates, services, or times.
-      - Return ONLY valid JSON, no explanation, no markdown
 
-      Return this exact JSON:
+      Only return a valid JSON object in the following format:
       {
         "booked": true or false,
         "patientName": "name or null",
