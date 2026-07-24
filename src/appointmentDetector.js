@@ -37,23 +37,19 @@ export const detectAndSaveAppointment = async (customerPhone, business, conversa
     console.log("conversationText:\n", conversationText);
 
     const detectionPrompt = `
-      You are an appointment detection system.
-      Your task is to determine whether a WhatsApp conversation contains a CONFIRMED appointment and extract its details.
+      You are an appointment information extractor.
+      Analyze the following WhatsApp conversation and extract any CONFIRMED appointment details.
+      A booking is confirmed only if the assistant explicitly accepts or confirms the appointment.
 
       Todays date is: ${today}
 
-      CONVERSATION:
-      ${conversationText}
-
       RULES:
-      - Return booked=true ONLY if the assistant has clearly accepted or confirmed the booking.
+      - If the appointment is confirmed, return booked=true else return booked=false.
       - Messages like "I want to book", "Can I book?", or "Is 4 PM available?" are NOT confirmed appointments.
-      - If the assistant asks for more information, booked=false.
-      - If the assistant confirms the appointment, booked=true.
       - Convert relative dates (today, tomorrow, kal, next Monday, etc.) using today's date.
-      - Convert times to 24-hour HH:MM format.
+      - Convert time to 24-hour HH:MM format.
       - If any field is not mentioned, return null.
-      - Do not invent names, dates, services, or times.
+      - Never invent any information.
 
       Only return a valid JSON object in the following format:
       {
@@ -64,14 +60,31 @@ export const detectAndSaveAppointment = async (customerPhone, business, conversa
         "time": "HH:MM in 24hr format or null",
         "notes": "any extra details or null"
       }
+
+      CONVERSATION:
+      ${conversationText}
     `
+
+    const appointmentSchema = {
+      type: "object",
+      properties: {
+        booked: { type: "boolean" },
+        patientName: { type: "string" },
+        service: { type: "string", "null" },
+        date: { type: "string" },
+        time: { type: "string" },
+        notes: { type: "string", "null" }
+      },
+      required: ["booked", "patientName", "date", "time"]
+    };
 
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash",
       config: {
         temperature: 0.1,      // very low — we want consistent extraction
         maxOutputTokens: 300,
-        responseMimeType: "application/json"  // JSON is short
+        responseMimeType: "application/json", // JSON is short
+        responseJsonSchema: appointmentSchema
       },
       contents: [{ role: "user", parts: [{ text: detectionPrompt }] }]
     });
