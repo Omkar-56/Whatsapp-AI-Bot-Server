@@ -11,7 +11,7 @@ export const detectAndSaveAppointment = async (customerPhone, business, conversa
     const recentMessages = await prisma.message.findMany({
       where: { conversationId: conversationId },
       orderBy: { sentAt: "desc" },
-      take: 6
+      take: 10
     });
 
     const conversationText = recentMessages
@@ -21,16 +21,23 @@ export const detectAndSaveAppointment = async (customerPhone, business, conversa
       const today = new Date().toISOString().split("T")[0];
 
     const detectionPrompt = `
-      You are an appointment detection system. Analyze this WhatsApp conversation and determine if an appointment was EXPLICITLY confirmed.
+      You are an appointment detection system.
+      Your task is to determine whether a WhatsApp conversation contains a CONFIRMED appointment and extract its details.
+
+      Todays date is: ${today}
 
       CONVERSATION:
       ${conversationText}
 
       RULES:
-      - Only return booked: true if the appointment date, time, and patient name are ALL confirmed
-      - "I want to book" or "Can I book?" is NOT a confirmed booking
-      - The assistant must have confirmed the slot for it to count
-      - If date is relative like "kal" or "tomorrow", use today's date: ${today} to calculate
+      - Return booked=true ONLY if the assistant has clearly accepted or confirmed the booking.
+      - Messages like "I want to book", "Can I book?", or "Is 4 PM available?" are NOT confirmed appointments.
+      - If the assistant asks for more information, booked=false.
+      - If the assistant confirms the appointment, booked=true.
+      - Convert relative dates (today, tomorrow, kal, next Monday, etc.) using today's date.
+      - Convert times to 24-hour HH:MM format.
+      - If any field is not mentioned, return null.
+      - Do not invent names, dates, services, or times.
       - Return ONLY valid JSON, no explanation, no markdown
 
       Return this exact JSON:
