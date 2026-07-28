@@ -59,10 +59,10 @@ export const detectAndSaveAppointment = async (customerPhone, business, conversa
       type: "object",
       properties: {
         booked: { type: "boolean" },
-        patientName: { type: "string" },
+        patientName: { type: ["string", "null"] },
         service: { type: ["string", "null"] },
-        date: { type: "string" },
-        time: { type: "string" },
+        date: { type: ["string", "null"] },
+        time: { type: ["string", "null"] },
         notes: { type: ["string", "null"] }
       },
       required: ["booked", "patientName", "date", "time"],
@@ -75,14 +75,17 @@ export const detectAndSaveAppointment = async (customerPhone, business, conversa
         temperature: 0.1,      // very low — we want consistent extraction
         maxOutputTokens: 300,
         responseMimeType: "application/json", // JSON is short
-        responseJsonSchema: appointmentSchema
+        responseJsonSchema: appointmentSchema,
+        thinkingConfig: {
+          thinkingBudget: 0
+        }
       },
       contents: [{ role: "user", parts: [{ text: detectionPrompt }] }]
     });
 
     console.dir(response, { depth: null });
 
-    const rawText = response.text;
+    const rawText = response.text ?? "";
     // console.log(`Detection raw response: ${rawText}`);
 
     const cleaned = rawText
