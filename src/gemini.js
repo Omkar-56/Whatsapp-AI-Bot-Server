@@ -1,5 +1,6 @@
 import { GoogleGenAI } from "@google/genai";
-import { log } from "console";
+import { systemPrompt, responseSchema } from "./responseConfig.js";
+
 
 // Initialize the client
 const ai = new GoogleGenAI({
@@ -13,50 +14,46 @@ const formatHistory = (messages) => {
   }));
 }
 
-export const getAIReply = async (systemPrompt, history, newMessage) => {
+const parseJSON = (text) => {
+  try {
+    return JSON.parse(text);
+  } catch (e) {
+    console.error("Invalid JSON:");
+    console.error(e);
+    throw e;
+  }
+}
+
+export const getAIReply = async (history, newMessage) => {
   const contents = [
     ...formatHistory(history),
     {
       role: "user",
-      parts: [{ text: `User Query (Reply to this message only): ${newMessage}` }]
+      parts: [{ text: newMessage }]
     }
   ];
 
   try {
-    
-    // // Create a chat session with history
-    // const chat = ai.chats.create({
-    //   model: "gemini-2.5-flash",
-    //   config: {
-    //     systemInstruction: systemPrompt,
-    //     maxOutputTokens: 300,
-    //     temperature: 0.7,    // slightly creative but mostly factual
-    //   },
-    //   history: formatHistory(history)
-    // });
-
-    // const response = await chat.sendMessage({
-    //   message: newMessage
-    // });
 
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash",
       contents,
       config: {
-        systemInstruction: {
-          role: "system",
-          parts: [{ text: systemPrompt }]
-        },
-        temperature: 0.7
+        systemInstruction: systemPrompt,
+        responseMimeType: "application/json",
+        responseJsonSchema: responseSchema,
+        temperature: 0.5,
+        maxOutputTokens: 512,
+        thinkingConfig: {
+          thinkingBudget: 0
+        }
       }
     });
 
-    const replyText  = response.text ?? "";
+    const result = parseJSON(response.text ?? "");
     const tokensUsed = response.usageMetadata?.totalTokenCount ?? 0;
 
-    console.log(`Gemini replied (${tokensUsed} tokens): "${replyText.slice(0, 60)}..."`);
-    
-    return { replyText, tokensUsed }
+    return { ...result, tokensUsed }
 
   } catch (err) {
     console.error("Gemini error:", err.message);
@@ -68,16 +65,21 @@ export const getAIReply = async (systemPrompt, history, newMessage) => {
         model: "gemini-2.0-flash",
         contents,
         config: {
-          systemInstruction: {
-            role: "system",
-            parts: [{ text: systemPrompt }]
-          },
-          temperature: 0.7
+          systemInstruction: systemPrompt,
+          responseMimeType: "application/json",
+          responseJsonSchema: responseSchema,
+          temperature: 0.5,
+          maxOutputTokens: 512,
+          thinkingConfig: {
+            thinkingBudget: 0
+          }
         }
       });
 
+      const fallbackResult = parseJSON(fallbackRes.text ?? "");
+
       return {
-        replyText: fallbackRes.text ?? "",
+        ...fallbackResult,
         tokensUsed: fallbackRes.usageMetadata?.totalTokenCount ?? 0
       };
 
@@ -85,8 +87,10 @@ export const getAIReply = async (systemPrompt, history, newMessage) => {
       console.error("Fallback failed:", fallbackErr.message);
 
       return {
-      replyText: "Sorry, thodi der baad try karein 🙏",
-      tokensUsed: 0
+        reply: "Sorry, thodi der baad try karein 🙏",
+        intent: "UNKNOWN",
+        appointment: null,
+        tokensUsed: 0
       };
     }
   }
