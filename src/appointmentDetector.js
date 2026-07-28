@@ -10,16 +10,16 @@ export const detectAndSaveAppointment = async (customerPhone, business, conversa
   try {
 
     const all = await prisma.message.findMany();
-    console.log(all.length);
+    // console.log(all.length);
 
-    console.log(conversationId);
+    // console.log(conversationId);
 
     const msgs = await prisma.message.findMany({
         where: {
             conversationId
         }
     });
-    console.log(msgs.length);
+    // console.log(msgs.length);
 
     const recentMessages = await prisma.message.findMany({
       where: { conversationId: conversationId },
@@ -34,32 +34,22 @@ export const detectAndSaveAppointment = async (customerPhone, business, conversa
       .join("\n");
     const today = new Date().toISOString().split("T")[0];
 
-    console.log("conversationText:\n", conversationText);
+    // console.log("conversationText:\n", conversationText);
 
     const detectionPrompt = `
       You are an appointment information extractor.
-      Analyze the following WhatsApp conversation and extract any CONFIRMED appointment details.
-      A booking is confirmed only if the assistant explicitly accepts or confirms the appointment.
+      Extract appointment information from this WhatsApp conversation.
 
       Todays date is: ${today}
 
       RULES:
-      - If the appointment is confirmed, return booked=true else return booked=false.
-      - Messages like "I want to book", "Can I book?", or "Is 4 PM available?" are NOT confirmed appointments.
+      - Determine whether the appointment has been CONFIRMED.
+      - An appointment is confirmed only if the assistant explicitly confirms or accepts the booking.
+      - If the customer is only asking about booking or availability, it is NOT confirmed.
       - Convert relative dates (today, tomorrow, kal, next Monday, etc.) using today's date.
       - Convert time to 24-hour HH:MM format.
       - If any field is not mentioned, return null.
       - Never invent any information.
-
-      Only return a valid JSON object in the following format:
-      {
-        "booked": true or false,
-        "patientName": "name or null",
-        "service": "service name or null",
-        "date": "YYYY-MM-DD or null",
-        "time": "HH:MM in 24hr format or null",
-        "notes": "any extra details or null"
-      }
 
       CONVERSATION:
       ${conversationText}
@@ -75,7 +65,8 @@ export const detectAndSaveAppointment = async (customerPhone, business, conversa
         time: { type: "string" },
         notes: { type: ["string", "null"] }
       },
-      required: ["booked", "patientName", "date", "time"]
+      required: ["booked", "patientName", "date", "time"],
+      additionalProperties: false
     };
 
     const response = await ai.models.generateContent({
@@ -89,8 +80,10 @@ export const detectAndSaveAppointment = async (customerPhone, business, conversa
       contents: [{ role: "user", parts: [{ text: detectionPrompt }] }]
     });
 
-    const rawText = response.text.trim();
-    console.log(`Detection raw response: ${rawText}`);
+    console.dir(response, { depth: null });
+
+    const rawText = response.text;
+    // console.log(`Detection raw response: ${rawText}`);
 
     const cleaned = rawText
       .replace(/```json/gi, "")
@@ -168,7 +161,7 @@ export const detectAndSaveAppointment = async (customerPhone, business, conversa
     })
 
     const confirmationMessage =
-      `✅ *Appointment Confirmed!*\n\n` +
+      `*Appointment Confirmed!*\n\n` +
       `Name: ${detected.patientName}\n` +
       `Clinic: ${business.name}\n` +
       `Service: ${detected.service ?? "General Consultation"}\n` +
