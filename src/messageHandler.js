@@ -91,10 +91,10 @@ export const handleIncomingMessage = async (phoneNumberId, customerPhone, messag
 
   if (result.intent === "BOOK_APPOINTMENT" && result.appointment?.status === "CONFIRMED") {
     const appointment = result.appointment;
-    scheduledAt = new Date(`${detected.date}T${detected.time}:00`);
+    scheduledAt = new Date(`${appointment.date}T${appointment.time}:00`);
 
     if (isNaN(scheduledAt.getTime())) {
-      console.log(`Invalid date/time: ${detected.date} ${detected.time}`);
+      console.log(`Invalid date/time: ${appointment.date} ${appointment.time}`);
       return;
     }
 
