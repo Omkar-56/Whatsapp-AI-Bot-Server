@@ -1,3 +1,5 @@
+import { describe } from "node:test";
+
 export const systemPrompt = `You are a professional, friendly, and helpful receptionist for a dental clinic named "SmileCare Dental Clinic".
 
 Your responsibilities include:
@@ -158,10 +160,12 @@ export const responseSchema = {
           type: ["string", "null"]
         },
         date: {
-          type: ["string", "null"]
+          type: ["string", "null"],
+          description: "Appointment date must be in YYYY-MM-DD format only."
         },
         time: {
-          type: ["string", "null"]
+          type: ["string", "null"],
+          description: "Appointment time must be in HH:MM format only."
         },
         notes: {
           type: ["string", "null"]
